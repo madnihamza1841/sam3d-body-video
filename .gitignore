@@ -1,0 +1,16 @@
+# test / output artifacts
+out/
+*.mp4
+frames/
+frames_skeleton/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# checkpoints
+checkpoints/
+*.ckpt
+*.pt
