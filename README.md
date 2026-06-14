@@ -28,6 +28,31 @@ python sam3d_video.py --make-sample-video sample.mp4
 python sam3d_video.py --video sample.mp4 --output out --self-test
 ```
 
+## Included demo (synthetic, 15s walking figure)
+
+The `demo/` folder contains a worked example produced by `make_walk_demo.py`:
+
+| file | what it is |
+|------|------------|
+| `demo/input.mp4` | a rendered humanoid doing a 15s walk cycle (450 frames @ 30fps) |
+| `demo/skeleton.mp4` | the same clip with the MHR70 skeleton overlaid |
+| `demo/markers.csv` | 3D + 2D marker data, 31,500 rows (450 frames × 70 keypoints) |
+
+Regenerate with:
+
+```bash
+python make_walk_demo.py
+```
+
+> **This demo is synthetic.** The real `facebookresearch/sam-3d-body` weights are
+> license-gated and the upstream code requires a CUDA GPU — neither is available
+> on the Apple-Silicon machine this was built on, and CPU inference over 450
+> frames would take hours. The demo uses a scripted kinematic walk as a stand-in
+> for the model so the data flow and output formats are demonstrated end-to-end.
+> The input figure and recovered skeleton come from the same ground-truth walk
+> cycle, so the overlay tracks exactly. For genuine model output, run the real
+> model (below) on a GPU machine.
+
 ## Running the REAL model
 
 The model is heavy, GPU-oriented, and its weights are gated. Setup:
