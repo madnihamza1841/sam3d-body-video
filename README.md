@@ -18,6 +18,13 @@ frame, time_s, person_id, kpt_id, kpt_name, x_px, y_px, score, X_m, Y_m, Z_m
 `x_px,y_px` are image pixels (for overlay); `X_m,Y_m,Z_m` are the model's 3D
 keypoints in camera space (metric). Keypoint names follow MHR70.
 
+Both the pipeline and the demo also emit **`markers.trc`** — the same 3D markers
+in TRC (OpenSim / Motion Analysis) format: tab-delimited, `Frame# / Time` plus
+X/Y/Z per marker, all 70 MHR70 markers in id order, scaled to **mm**. Axes are
+the model's camera space (X right, Y down, Z forward) — remap in your analysis
+tool if you need a different convention. Multiple detected people produce one
+TRC each (`markers.trc`, `markers_person1.trc`, …), since TRC is single-subject.
+
 ## Quick verification (no GPU / no weights)
 
 This exercises the entire pipeline with a synthetic estimator that emits the
@@ -37,6 +44,7 @@ The `demo/` folder contains a worked example produced by `make_walk_demo.py`:
 | `demo/input.mp4` | a rendered humanoid doing a 15s walk cycle (450 frames @ 30fps) |
 | `demo/skeleton.mp4` | the same clip with the MHR70 skeleton overlaid |
 | `demo/markers.csv` | 3D + 2D marker data, 31,500 rows (450 frames × 70 keypoints) |
+| `demo/markers.trc` | the same 3D markers in TRC (OpenSim) format, mm |
 
 Regenerate with:
 

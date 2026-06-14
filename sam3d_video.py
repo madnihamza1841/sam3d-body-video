@@ -258,6 +258,64 @@ def collect_rows(frame_idx: int, time_s: float, persons: list) -> list:
     return out
 
 
+def write_markers_trc(rows: list, out_path: str, fps: float, person_id: int = 0,
+                      units: str = "mm", scale: float = 1000.0) -> Optional[str]:
+    """Write 3D markers in TRC (OpenSim / Motion Analysis) format.
+
+    TRC is tab-delimited with Frame#, Time, then X/Y/Z per marker. The model's
+    3D keypoints are in camera space (X right, Y down, Z forward) in metres;
+    here they are scaled to `units` (default mm). All 70 MHR70 markers are
+    written in id order so the marker set is constant across frames.
+    """
+    prows = [r for r in rows if int(r[2]) == person_id]
+    if not prows:
+        return None
+    n_markers = len(MHR70_NAMES)
+    # frame -> {kpt_id: (X, Y, Z)} and frame -> time
+    grid: dict = {}
+    times: dict = {}
+    for r in prows:
+        fr = int(r[0])
+        grid.setdefault(fr, {})[int(r[3])] = (float(r[8]), float(r[9]), float(r[10]))
+        times[fr] = float(r[1])
+    frames = sorted(grid)
+    n_frames = len(frames)
+
+    with open(out_path, "w", newline="") as f:
+        f.write(f"PathFileType\t4\t(X/Y/Z)\t{os.path.basename(out_path)}\n")
+        f.write("DataRate\tCameraRate\tNumFrames\tNumMarkers\tUnits\t"
+                "OrigDataRate\tOrigDataStartFrame\tOrigNumFrames\n")
+        f.write(f"{fps:g}\t{fps:g}\t{n_frames}\t{n_markers}\t{units}\t"
+                f"{fps:g}\t1\t{n_frames}\n")
+        # marker-name header: each name followed by two empty cells
+        name_cells = "".join(f"{MHR70_NAMES[i]}\t\t\t" for i in range(n_markers))
+        f.write(f"Frame#\tTime\t{name_cells}\n")
+        # axis sub-header: X1 Y1 Z1 X2 Y2 Z2 ...
+        axis_cells = "".join(f"X{i+1}\tY{i+1}\tZ{i+1}\t" for i in range(n_markers))
+        f.write(f"\t\t{axis_cells}\n")
+        f.write("\n")
+        for out_idx, fr in enumerate(frames, start=1):
+            cells = [str(out_idx), f"{times[fr]:.6f}"]
+            for i in range(n_markers):
+                x, y, z = grid[fr].get(i, (0.0, 0.0, 0.0))
+                cells += [f"{x*scale:.5f}", f"{y*scale:.5f}", f"{z*scale:.5f}"]
+            f.write("\t".join(cells) + "\n")
+    print(f"[trc]    wrote {n_frames} frames x {n_markers} markers -> {out_path}")
+    return out_path
+
+
+def write_markers_trc_all(rows: list, out_path: str, fps: float, **kw) -> None:
+    """Write one TRC per person (single subject -> out_path; extra subjects get
+    a _personN suffix, since TRC is a single-subject format)."""
+    pids = sorted({int(r[2]) for r in rows})
+    if not pids:
+        return
+    base, ext = os.path.splitext(out_path)
+    for pid in pids:
+        path = out_path if pid == pids[0] else f"{base}_person{pid}{ext}"
+        write_markers_trc(rows, path, fps, person_id=pid, **kw)
+
+
 # --------------------------------------------------------------------------- #
 # Estimator backends
 # --------------------------------------------------------------------------- #
@@ -401,11 +459,14 @@ def run_pipeline(args) -> None:
 
     out_video = os.path.join(out_dir, "skeleton.mp4")
     out_csv = os.path.join(out_dir, "markers.csv")
+    out_trc = os.path.join(out_dir, "markers.trc")
     write_video(skel_paths, out_video, info.fps)
     write_markers_csv(all_rows, out_csv)
+    write_markers_trc_all(all_rows, out_trc, info.fps)
     print("\n=== DONE ===")
     print(f"  skeleton video : {out_video}")
     print(f"  markers csv    : {out_csv}")
+    print(f"  markers trc    : {out_trc}")
     print(f"  frames         : {frames_dir}")
 
 

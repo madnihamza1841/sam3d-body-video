@@ -30,6 +30,7 @@ from sam3d_video import (
     collect_rows,
     draw_skeleton,
     write_markers_csv,
+    write_markers_trc_all,
 )
 
 W, H = 540, 720
@@ -161,8 +162,9 @@ def main():
     vin.release()
     vsk.release()
     write_markers_csv(rows, os.path.join(out, "markers.csv"))
+    write_markers_trc_all(rows, os.path.join(out, "markers.trc"), FPS)
     print(f"[demo]   {N} frames @ {FPS}fps ({SECONDS}s) -> {out}/input.mp4, "
-          f"{out}/skeleton.mp4, {out}/markers.csv")
+          f"{out}/skeleton.mp4, {out}/markers.csv, {out}/markers.trc")
 
 
 if __name__ == "__main__":
